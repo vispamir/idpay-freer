@@ -46,7 +46,7 @@ function gateway__idpay($data)
     if ($payment && !empty($data['api_key']))
     {
         $api_key = $data['api_key'];
-        $url = 'https://api.idpay.ir/v1/payment';
+        $url = 'https://api.idpay.ir/v1.1/payment';
         $sandbox_mode = (!empty($data['sandbox']) && $data['sandbox'] != 0) ? 'true' : 'false';
 
         $params = array(
@@ -104,20 +104,25 @@ function gateway__idpay($data)
 function callback__idpay($data)
 {
     global $db, $get;
-    
+
+    $status    = !empty($_POST['status'])  ? $_POST['status']   : (!empty($_GET['status'])  ? $_GET['status']   : NULL);
+    $track_id  = !empty($_POST['track_id'])? $_POST['track_id'] : (!empty($_GET['track_id'])? $_GET['track_id'] : NULL);
+    $id        = !empty($_POST['id'])      ? $_POST['id']       : (!empty($_GET['id'])      ? $_GET['id']       : NULL);
+    $order_id  = !empty($_POST['order_id'])? $_POST['order_id'] : (!empty($_GET['order_id'])? $_GET['order_id'] : NULL);
+
     $output['status'] = 0;
     $output['message']= 'پرداخت انجام نشده است.';
        
-    if (isset($_POST['status'], $_POST['order_id']) && !empty($data['api_key']))
+    if (!empty($status) && !empty($order_id) && !empty($id) && !empty($data['api_key']))
     {
-        if ($_POST['status'] == 100)
+        if ($status == 100)
         {
-            $payment = $db->fetch('SELECT * FROM `payment` WHERE `payment_rand` = "'. $_POST['order_id'] .'" LIMIT 1;');
+            $payment = $db->fetch('SELECT * FROM `payment` WHERE `payment_rand` = "'. $order_id .'" LIMIT 1;');
 
-            if ($payment['payment_status'] == 1)
+            if ($payment['payment_status'] == 1 && $payment['payment_res_num'] == $id)
             {
                 $api_key = $data['api_key'];
-                $url = 'https://api.idpay.ir/v1/payment/inquiry';
+                $url = 'https://api.idpay.ir/v1.1/payment/verify';
                 $sandbox_mode = (!empty($data['sandbox']) && $data['sandbox'] != 0) ? 'true' : 'false';
                 
                 $params = array(
